@@ -25,10 +25,22 @@ export function initMatchNotifier() {
       let mapName = t('unknown');
 
       if (matchData && matchData.voting) {
-         const loc = matchData.voting.location?.pick?.[0];
-         const map = matchData.voting.map?.pick?.[0];
-         if (loc) serverName = loc;
-         if (map) mapName = map;
+         const mapVoting = matchData.voting.map;
+         if (mapVoting && mapVoting.pick && mapVoting.pick.length > 0) {
+           const pickedMapId = mapVoting.pick[0]; 
+           const entity = mapVoting.entities?.find((e: any) => e.class_name === pickedMapId || e.game_map_id === pickedMapId || e.guid === pickedMapId);
+           mapName = entity ? entity.name : pickedMapId;
+           if (mapName.startsWith('de_')) {
+             mapName = mapName.replace('de_', '').charAt(0).toUpperCase() + mapName.slice(4);
+           }
+         }
+
+         const locVoting = matchData.voting.location;
+         if (locVoting && locVoting.pick && locVoting.pick.length > 0) {
+           const pickedLocId = locVoting.pick[0];
+           const entity = locVoting.entities?.find((e: any) => e.guid === pickedLocId);
+           serverName = entity ? entity.name : pickedLocId;
+         }
       }
 
       if (Notification.permission === 'granted') {
@@ -36,8 +48,9 @@ export function initMatchNotifier() {
           body: t('notifMatchBody', { map: mapName, server: serverName }),
           icon: 'https://www.faceit.com/favicon.ico'
         });
-        
         notif.onclick = () => window.focus();
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission();
       }
     }
   }, 2000);
